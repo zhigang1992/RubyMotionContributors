@@ -1,36 +1,40 @@
-class HomeScreen < PM::Screen
-  title "Your title here"
+class HomeScreen < PM::TableScreen
+
+  REQUEST_URL = 'https://api.github.com/repos/HipByte/RubyMotion/contributors'
+
+  title "RubyMotion Contributors"
+  refreshable
+  searchable
+
   stylesheet HomeScreenStylesheet
 
   def on_load
-    set_nav_bar_button :left, system_item: :camera, action: :nav_left_button
-    set_nav_bar_button :right, title: "Right", action: :nav_right_button
-
-    @hello_world = append!(UILabel, :hello_world)
+    @contributors = []
+    load_contributors
   end
 
-  def nav_left_button
-    mp 'Left button'
+  def table_data
+    [{
+        cells: @contributors.map do |c|
+          {
+            title: c[:login],
+            subtitle: c[:url],
+            action: :mp,
+            arguments: {
+              url: c[:url]
+            }
+          }
+        end
+      }]
   end
 
-  def nav_right_button
-    mp 'Right button'
+  def load_contributors
+    AFMotion::JSON.get(REQUEST_URL) do |r|
+      @contributors = r.object
+      stop_refreshing
+      update_table_data
+    end
   end
+  alias_method :on_refresh, :load_contributors
 
-  # You don't have to reapply styles to all UIViews, if you want to optimize, another way to do it
-  # is tag the views you need to restyle in your stylesheet, then only reapply the tagged views, like so:
-  #   def logo(st)
-  #     st.frame = {t: 10, w: 200, h: 96}
-  #     st.centered = :horizontal
-  #     st.image = image.resource('logo')
-  #     st.tag(:reapply_style)
-  #   end
-  #
-  # Then in will_animate_rotate
-  #   find(:reapply_style).reapply_styles#
-
-  # Remove the following if you're only using portrait
-  def will_animate_rotate(orientation, duration)
-    find.all.reapply_styles
-  end
 end
